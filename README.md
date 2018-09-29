@@ -2,19 +2,17 @@
 
 ## 项目介绍
 
-java的对象复制器,如果两个类型有相同的field.通过这个工具,可以把相同名字的field的值复制过去.
+java的对象复制器,用于在不同类型的对象之间复制字段值.常用于POJO类的复制.也可以用于对象的深拷贝.
 
-复制过程还可以指定转换规则.可以在复制过程中改变复制的值,甚至是类型.
+举例来说,这个工具可以将DTO类的值拷贝给Model类.避免写一堆转换代码.
 
-这个工具可以当作对象的深拷贝器使用.
+基本规则:如果两个类型的两个字段名相同,就可以把值拷贝过去.
 
-## 软件架构
+支持的类型:Object,基本类型,List,Map,同时也支持嵌套,如Object内部可以嵌套另外一个对象,或者List.
 
-软件架构说明
+复制过程还可以指定转换规则.可以在复制过程中改变复制的值,甚至是类型.如,复制过程中,字段值可以加1,或者将LocalDateTime类型的字段转换到Long类型的字段上.
 
-## 安装教程
-
-引用jar即可
+性能方面,在第一次调用的时候会计算并缓存映射关系以及目标对象的构造函数,因此拷贝过程的性能有所保证.
 
 ## 使用说明
 
@@ -25,71 +23,91 @@ java的对象复制器,如果两个类型有相同的field.通过这个工具,�
 3. 映射对象
 
 ```Java
+
 class From{
-    private int a;
+    private int studentId;
 }
 class To{
-    private int a;
+    private int studentId;
 }
 class Run{
     static void main(){
-        //声明映射管理器，最好定义为全局对象
+        //声明映射管理器，最好定义为全局对象,避免频繁初始化
         MappingManager mappingManager = new MappingManager();
-        //注册类型,从From转换到To
+        //注册类型,告诉映射管理器,要把From类拷贝为To类
+        //由于二者都有名字为studentId属性,因而From.studentId会拷贝到To.studentId上.
         mappingManager.registerMapper(From.class, To.class);
 
-        //方式1：通过map函数 得到一个全新的对象
+        //映射方式1：通过map函数 得到一个全新的对象
         To to=mappingManager.map(new From(),To.class);
-        //方式2：通过mapTo函数，把源对象复制给现有对象
+        //映射方式2：通过mapTo函数，把源对象复制给现有对象
         To toObj=new To();
         toObj=mappingManager.mapTo(new From(),toObj);
     }
 }
 ```
 
-在例子中from和to的字段名都是a,因此,注册之后,程序会记录这个对应关系,把from中的a复制到to中的a.
+在例子中from和to类都包含名字为studentId的字段,因此,注册之后,程序会记录这个对应关系,把from中的studentId复制到to中的studentId.
 
-这里还有一个标记为已过期的map方法，可以不指定目标类型，但是由于调用的时候会查找需要转化为哪种类型，影响性能，不推荐使用。
+例子中,studentId是基本类型(int),object_copier支持如下几种类型:基本类型,对象,list,map
 
-例子中,a是基本类型(int),实际上字段支持基本类型,对象,list,map
-
-以下写法都支持
+如:
 
 ```Java
 class From{
     private int a;
     private String b;
-    private java.time.LocalDateTime c;
+    private SomeClass1 c;
     private List<Integer> d;
     private Map<Integer,String> e;
+    private List<SomeClass2> f;
+    private Map<Integer,SomeClass3> g;
 }
 ```
-
-另外，mapTo函数还有一个可选参数叫isCopyNull，如果isCopyNull==true，那么在复制的时候，如果源对象的属性的值是null，那么复制给目标对象的时候，目标对象的属性a的值将被覆写为null。如果isCopyNull==false，那么在遇到属性值为null的时候，会认为i想保留目标对象当前的值，不会用null覆盖目标对象的对应属性。
 
 ### 嵌套其他类型
 
-很常见的需求是类型中嵌套其他类型.如
+类中定义了其他类,这是一种常见的需求.例如学生类中带着家乡信息,课程信息,这种场景object_copier也能应付.
+
+如想把studentDto映射为StudentModel,定义如下:
 
 ```Java
-class From{
-    private int a;
-    private Inner b;
+class StudentDto{
+    private int id;
+    private String name;
+    private HomeTownDto hometown;
+    private List<CourseDto> courses;
 }
-class Inner{
-    private int h;
+class HomeTownDto{
+    private int cityId;
+    private int cityName;
+}
+class CourseDto{
+    private int courseId;
+    private String courseName
 }
 
-class To{
-    private int a;
-    private InnerTo b;
+
+
+class StudentModel{
+    private int id;
+    private String name;
+    private HomeTownModel hometown;
+    private List<CourseModel> courses;
 }
-class InnerTo{
-    private int h;
+class HomeTownModel{
+    private int cityId;
+    private int cityName;
+}
+class CourseModel{
+    private int courseId;
+    private String courseName
 }
 ```
 
-这种情况下,需要额外注册Inner类,程序才能识别并正确转换.注册Inner有两种选择
+这种情况下,需要额外注册HomeTown,Course,告诉object_copier这两对类也需要转换.程序才能正常工作,如果不注册的话,拷贝结果中的StudentModel.hometown的值会为空
+
+注册Inner有两种选择
 
 方法1:手工注册Inner
 
@@ -99,53 +117,63 @@ class Run{
         //声明映射管理器
         MappingManager mappingManager = new MappingManager();
         //注册类型
-        mappingManager.registerMapper(From.class, To.class);
+        mappingManager.registerMapper(StudentDto.class, StudentModel.class);
         //手工注册
-        mappingManager.registerMapper(Inner.class, InnerTo.class);
+        mappingManager.registerMapper(HomeTownDto.class, HomeTownModel.class);
+        mappingManager.registerMapper(CourseDto.class, CourseModel.class);
 
         //得到复制后的对象
-        To to=mappingManager.map(new From(),To.class);
+        StudentModel to = mappingManager.map(new StudentDto(),StudentModel.class);
     }
 }
 ```
 
-方法2:给Inner字段添加注解.
+方法2:给StudentDto中,包含特殊对象的字段添加注解.
 
 ```Java
-class From{
-    private int a;
-
+class StudentDto{
+    private int id;
+    private String name;
     @RegisterThisType
-    private Inner b;
+    private HomeTownDto hometown;
+    @RegisterThisType
+    private List<CourseDto> courses;
 }
 ```
 
-如果用这种方式,就不用手工注册,初始化时的mappingManager.registerMapper(Inner.class, InnerTo.class);可以不写.
-
-另外对于list和map,也可以用这个注解.
+如果用这种方式,就不用手工注册,注册类型的时候只要写一行就可以了.余下的HomeTownDto,CourseDto会被自动识别.
 
 ```Java
-class From{
-    private int a;
+mappingManager.registerMapper(StudentDto.class, StudentModel.class);
+```
+
+另外对于list和map,也可以用这个注解.使用方法如下,此时会自动发现list和map内部的CourseDto,并建立映射关系.
+
+```Java
+class StudentDto{
+    private int id;
 
     @RegisterThisType
-    private List<Inner> b;
+    private List<CourseDto> courses;
 }
-class From{
-    private int a;
+class StudentDto{
+    private int id;
 
-    //指定在字段arr2中,只注册第2个包含的类型,也就是Inner
+    //指定在字段courses中,只注册第2个包含的类型,也就是courses
     @RegisterThisType(typeIndex = {1})
-    private Map<Integer,Inner> b;
+    private Map<Integer,CourseDto> courses;
 }
 ```
 
-注意,
-1. 如果一个类中出现了两次Inner类,RegisterThisType注解标记一次就可以了.当然标记两次也没关系.注册的时候会检测是否重复.
+注意:
+
+* 如果一个类中出现了两次CourseDto类,RegisterThisType注解标记一次就可以了.当然标记两次也没关系.注册的时候会检测是否重复.
 
 ### 映射
 
-实际使用中常常要转换字段的值和类型(否则创建那么多类还有什么意义,直接用原来的类多方便),对此也提供了支持.使用方式:在注册类的时候,添加转换规则.
+实际使用中常常要转换字段的值和类型(否则创建那么多类还有什么意义,直接用原来的类多方便),对此也提供了支持.
+
+使用方式:在注册类的时候,添加转换规则.
 
 这个例子展示了值类型,对象的值转换,以及拷贝过程改变类型
 
@@ -154,7 +182,7 @@ public class SimpleDto {
     protected Integer int1;
     protected int int4;
     protected String string2;
-    protected String string3;
+    protected String string3; //注意两个类的string3,类型不同,一个是string一个是int
 }
 public class SimpleModel {
     protected Integer int1;
@@ -183,7 +211,7 @@ class run{
         dto.setString3("66666");
 
         //映射
-        SimpleModel model = mapper.map(dto);
+        SimpleModel model = mapper.map(dto,SimpleModel.class);
         //检查结果
         if (!model.getInt1().equals(5000))
             throw new RuntimeException("fail");
@@ -196,6 +224,54 @@ class run{
     }
 }
 ```
+
+### 拷贝规则
+
+在类拷贝的时候,支持使用规则改变拷贝的行为,这些规则可以大大扩展object_copier的应用范围.目前规则有两条,包括copyNull(是否拷贝空值),collectionCopyRule(处理集合拷贝的规则)
+
+初始化MappingManager之后,会应用默认的初始化规则,这个规则是全局的,而且你可以随时修改.
+
+```Java
+MappingManager mappingManager = new MappingManager();
+//设置处理list的方式为合并
+mappingManager.getDefaultCopyConfig().setCollectionCopyRule(CollectionCopyRule.FULL_JOIN);
+```
+
+也可以不修改全局规则,而是在每次map的时候,指定本次映射的规则.
+
+指定的时候,只设置你想特殊指定的规则就可以,其他规则会使用全局规则的.
+
+```Java
+CopyConfig c = new CopyConfig();
+c.setCopyNull(false);//这里只指定了一个规则,其他规则不设置,会自动读取全局规则.
+SimpleModel model = mapper.map(dto,SimpleModel.class,c);
+```
+
+### 拷贝规则copyNull
+
+* 含义:拷贝的时候,如果源对象的某个字段为空,是跳过这个字段(false),还是把空复制过去(true).
+* 可选值:true,false
+* 默认值:false
+* 用途:如果选择true,拷贝的时候会把null赋值给目标字段.这会忠实的反应源对象的值.但是在某些场合,如果源对象为的某个字段空,我们不希望目标的对应字段被覆盖.这可以用于对对象的部分更新.
+
+### 拷贝规则collectionCopyRule
+
+* 含义:拷贝的时候对集合进行处理的方式
+* 可选值:
+  * OVER_WRITE(源对象覆盖目标对象,删除target里的所有元素,并用source的覆盖)
+  * JOIN(半合并,以source中的元素为主,但是如果target有相同的元素,那么会对相同的元素进行合并.)
+  * FULL_JOIN(完全合并,源集合和目标集合里的元素都会保留,重复的会合并.)
+* 默认值:JOIN
+
+### 定义比较方式
+
+刚才可能会引起疑问,如果认为集合中两个对象是相同的?答案是我也不知道,在合并集合的时候,默认采用Object.equal()比较对象,但很多情况下,这种方式是不合适的.比如.通常当两个student对象的id相同,我们就认为两个对象是一样.但此时如果还调用equal来比较两个对象,返回结果是false(除非你override了equal方法).鉴于有写equal习惯的人不多.这里提供了addCompareRule函数,来注册类的比较方法.
+
+```Java
+mappingManager.addCompareRule(Student.class, (a, b) -> a.getId() == b.getId());
+```
+
+设定了这个函数之后,当你想合并两个学生信息列表,就不会发生数据重复了.
 
 ## 改进方向
 

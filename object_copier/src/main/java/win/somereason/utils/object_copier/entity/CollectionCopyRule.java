@@ -17,8 +17,8 @@ public enum CollectionCopyRule {
      */
     JOIN(2),
     /**
-     * 源对象和目标对象合并.
-     * target和source里的元素都会保留,重复的会合并.
+     * 完全合并.
+     * 源集合和目标集合里的元素都会保留,重复的会合并.
      */
     FULL_JOIN(3);
 

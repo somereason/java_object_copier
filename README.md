@@ -75,16 +75,16 @@ class From{
 class StudentDto{
     private int id;
     private String name;
-    private HomeTownDto hometown;
+    private HometownDto hometown;
     private List<CourseDto> courses;
 }
-class HomeTownDto{
+class HometownDto{
     private int cityId;
     private int cityName;
 }
 class CourseDto{
     private int courseId;
-    private String courseName
+    private String courseName;
 }
 
 
@@ -92,20 +92,20 @@ class CourseDto{
 class StudentModel{
     private int id;
     private String name;
-    private HomeTownModel hometown;
+    private HometownModel hometown;
     private List<CourseModel> courses;
 }
-class HomeTownModel{
+class HometownModel{
     private int cityId;
     private int cityName;
 }
 class CourseModel{
     private int courseId;
-    private String courseName
+    private String courseName;
 }
 ```
 
-这种情况下,需要额外注册HomeTown,Course,告诉object_copier这两对类也需要转换.程序才能正常工作,如果不注册的话,拷贝结果中的StudentModel.hometown的值会为空
+这种情况下,需要额外注册Hometown,Course,告诉object_copier这两对类也需要转换.程序才能正常工作,如果不注册的话,拷贝结果中的StudentModel.hometown的值会为空
 
 注册Inner有两种选择
 
@@ -119,7 +119,7 @@ class Run{
         //注册类型
         mappingManager.registerMapper(StudentDto.class, StudentModel.class);
         //手工注册
-        mappingManager.registerMapper(HomeTownDto.class, HomeTownModel.class);
+        mappingManager.registerMapper(HometownDto.class, HometownModel.class);
         mappingManager.registerMapper(CourseDto.class, CourseModel.class);
 
         //得到复制后的对象
@@ -135,13 +135,13 @@ class StudentDto{
     private int id;
     private String name;
     @RegisterThisType
-    private HomeTownDto hometown;
+    private HometownDto hometown;
     @RegisterThisType
     private List<CourseDto> courses;
 }
 ```
 
-如果用这种方式,就不用手工注册,注册类型的时候只要写一行就可以了.余下的HomeTownDto,CourseDto会被自动识别.
+如果用这种方式,就不用手工注册,注册类型的时候只要写一行就可以了.余下的HometownDto,CourseDto会被自动识别.
 
 ```Java
 mappingManager.registerMapper(StudentDto.class, StudentModel.class);

@@ -9,11 +9,6 @@ public class CopyConfig {
     protected Boolean copyNull;
     protected CollectionCopyRule collectionCopyRule;
 
-    public CopyConfig() {
-        this.copyNull = false;
-        this.collectionCopyRule = CollectionCopyRule.OVER_WRITE;
-    }
-
     public void setCollectionCopyRule(CollectionCopyRule collectionCopyRule) {
         this.collectionCopyRule = collectionCopyRule;
     }

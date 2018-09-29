@@ -105,7 +105,7 @@ class CourseModel{
 }
 ```
 
-这种情况下,需要额外注册Hometown,Course,告诉object_copier这两对类也需要转换.程序才能正常工作,如果不注册的话,拷贝结果中的StudentModel.hometown的值会为空
+这种情况下,需要额外注册Hometown,Course,告诉object_copier这两对类也需要转换.程序才能正常工作,如果不注册的话,会忽略StudentModel.hometown这个字段,导致它的值会为空,同时输出一条错误日志.
 
 注册Inner有两种选择
 
@@ -265,14 +265,26 @@ SimpleModel model = mapper.map(dto,SimpleModel.class,c);
 
 ### 定义比较方式
 
-刚才可能会引起疑问,如果认为集合中两个对象是相同的?答案是我也不知道,在合并集合的时候,默认采用Object.equal()比较对象,但很多情况下,这种方式是不合适的.比如.通常当两个student对象的id相同,我们就认为两个对象是一样.但此时如果还调用equal来比较两个对象,返回结果是false(除非你override了equal方法).鉴于有写equal习惯的人不多.这里提供了addCompareRule函数,来注册类的比较方法.
+刚才可能会引起疑问,如果认为集合中两个对象是相同的?答案是我也不知道,在合并集合的时候,默认采用Object.equal()比较对象,但很多情况下,这种方式是不合适的.比如.通常当两个student对象的id相同,我们就认为两个对象是一样.但此时如果还调用equal来比较两个对象,返回结果是false(除非你override了equal方法).鉴于有写equal习惯的人不多,而且有些时候写不了equal函数(比如自动生成的类).这里提供了addCompareRule函数,来注册类的比较方法.
 
 ```Java
-mappingManager.addCompareRule(Student.class, (a, b) -> a.getId() == b.getId());
+mappingManager.addCompareRule(StudentModel.class, (a, b) -> a.getId() == b.getId());
 ```
 
-设定了这个函数之后,当你想合并两个学生信息列表,就不会发生数据重复了.
+上面的例子给studentModel类设定了比较规则：当ID相同的时候就认为两个类相同,如果你愿意,可以给所有的类都注册上比较函数,但这样做意义不大,通常,给list所包含的类注册上就可以了.只有它们才会面临要比较的情况.
 
+### 输出日志
+
+为了不因为一些字段的错误中断拷贝过程,object_copier会捕获一些不重要的错误,然后输出日志.
+
+使用者可以注册一个回调函数来输出这些日志.回调函数是一个Consumer<String>,注册的方式为:
+
+```Java
+mappingManager.setWriteLogFunction(a -> {
+        a = "自动拷贝过程出现错误:" + a;
+        logger.info(a);
+    });
+```
 ## 改进方向
 
 1. 支持继承机制,能够拷贝继承得到的field的值.

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>win.somereason.utils</groupId>
-    <artifactId>object_copier_proj</artifactId>
+    <artifactId>java_object_copier</artifactId>
     <packaging>pom</packaging>
     <version>1.3-SNAPSHOT</version>
     <modules>

@@ -288,3 +288,4 @@ mappingManager.setWriteLogFunction(a -> {
 ## 改进方向
 
 1. 支持继承机制,能够拷贝继承得到的field的值.
+1. 支持枚举

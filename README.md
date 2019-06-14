@@ -16,6 +16,16 @@ java的对象复制器,用于在不同类型的对象之间复制字段值.常�
 
 ## 使用说明
 
+### 引用
+
+'''XML
+	<dependency>
+			<groupId>com.github.somereason</groupId>
+			<artifactId>object_copier</artifactId>
+			<version>1.3.1</version>
+	</dependency>
+'''
+
 ### 基本使用
 
 1. 声明MappingManager,注意MappingManager可以重复使用,

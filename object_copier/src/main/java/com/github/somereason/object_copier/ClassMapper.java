@@ -50,7 +50,7 @@ public class ClassMapper<S, T> {
             mapper.sourceField = typeSField;
             mapper.targetField = typeDField.get();
 
-            mapper.isFieldTypeEqual = mapper.sourceField.getType().getName().equals(mapper.targetField.getType().getName());
+            mapper.isFieldTypeEqual = mapper.targetField.getType().isAssignableFrom(mapper.targetField.getType());
 
             //目的类的类型
             if (mapper.targetField.getType().isPrimitive()) {

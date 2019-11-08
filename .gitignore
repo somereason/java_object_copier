@@ -13,3 +13,4 @@ buildNumber.properties
 .idea
 *.iml
 /key for pub
+/发版说明.txt
